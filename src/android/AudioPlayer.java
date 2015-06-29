@@ -215,7 +215,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
      */
     public void startPlaying(String file, boolean loop) {
         if (this.readyPlayer(file) && this.player != null) {
-        	this.player.setLooping(loop);
+        	this.player.setLooping(true);
             this.player.start();
             this.setState(STATE.MEDIA_RUNNING);
             this.seekOnPrepared = 0; //insures this is always reset
