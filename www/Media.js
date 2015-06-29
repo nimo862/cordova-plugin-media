@@ -77,7 +77,7 @@ Media.prototype.play = function(options) {
 };
 
 Media.prototype.playLoop = function(options) {
-    exec(null, null, "Media", "startPlayingAudioLoop”, [this.id, this.src, options]);
+    exec(null, null, "Media", "startPlayingAudioLoop", [this.id, this.src, options]);
 };
 
 /**
