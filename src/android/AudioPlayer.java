@@ -215,7 +215,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
      */
     public void startPlaying(String file, boolean loop) {
         if (this.readyPlayer(file) && this.player != null) {
-        	this.player.setLooping(true);
+        	this.player.setLooping(loop);
             this.player.start();
             this.setState(STATE.MEDIA_RUNNING);
             this.seekOnPrepared = 0; //insures this is always reset
@@ -277,7 +277,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
      */
     public void onCompletion(MediaPlayer player) {
         Log.d(LOG_TAG, "on completion is calling stopped");
-        this.setState(STATE.MEDIA_STOPPED);
+        //this.setState(STATE.MEDIA_STOPPED);
     }
 
     /**
