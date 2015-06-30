@@ -355,6 +355,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
         this.seekToPlaying(this.seekOnPrepared);
         // If start playing after prepared
         if (!this.prepareOnly) {
+        	this.player.setLooping(true);
             this.player.start();
             this.setState(STATE.MEDIA_RUNNING);
             this.seekOnPrepared = 0; //reset only when played
@@ -406,7 +407,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
      */
     private void setState(STATE state) {
         if (this.state != state) {
-            //sendStatusChange(MEDIA_STATE, null, (float)state.ordinal());
+            sendStatusChange(MEDIA_STATE, null, (float)state.ordinal());
         }
         this.state = state;
     }
