@@ -83,7 +83,9 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
     private MediaRecorder recorder = null;  // Audio recording object
     private String tempFile = null;         // Temporary recording file name
 
-    private MediaPlayer player = null;      // Audio player object
+    private CompatMediaPlayer player = null;      // Audio player object
+    private CompatMediaPlayer nextPlayer = null;      // Audio player object
+    private boolean loop = false;
     private boolean prepareOnly = true;     // playback after file prepare flag
     private int seekOnPrepared = 0;     // seek to this location once media is prepared
 
@@ -214,8 +216,9 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
      * @param file              The name of the audio file.
      */
     public void startPlaying(String file, boolean loop) {
+    	if (loop)
+    		this.loop = loop;
         if (this.readyPlayer(file) && this.player != null) {
-        	this.player.setLooping(loop);
             this.player.start();
             this.setState(STATE.MEDIA_RUNNING);
             this.seekOnPrepared = 0; //insures this is always reset
@@ -277,7 +280,15 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
      */
     public void onCompletion(MediaPlayer player) {
         Log.d(LOG_TAG, "on completion is calling stopped");
-        this.setState(STATE.MEDIA_STOPPED);
+        if (this.loop) {
+        	player.release();
+        	this.player = this.nextPlayer;
+        	this.nextPlayer = new CompatMediaPlayer();
+        	loadNextAudioFile(this.audioFile);
+        	this.player.setNextMediaPlayer(this.nextPlayer);
+        } else {
+        	this.setState(STATE.MEDIA_STOPPED);
+        }
     }
 
     /**
@@ -355,7 +366,6 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
         this.seekToPlaying(this.seekOnPrepared);
         // If start playing after prepared
         if (!this.prepareOnly) {
-        	this.player.setLooping(true);
             this.player.start();
             this.setState(STATE.MEDIA_RUNNING);
             this.seekOnPrepared = 0; //reset only when played
@@ -474,8 +484,15 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
                     if (this.player == null) {
                         this.player = new MediaPlayer();
                     }
+                    if ((this.nextPlayer == null) && this.loop) {
+                        this.player = new MediaPlayer();
+                    }
                     try {
                         this.loadAudioFile(file);
+                        if (this.loop) {
+                        	this.loadNextAudioFile(file);
+                        	this.player.setNextMediaPlayer(this.nextPlayer);
+                        }
                     } catch (Exception e) {
                         sendErrorStatus(MEDIA_ERR_ABORTED);
                     }
@@ -558,6 +575,33 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
             }
     }
 
+    private void loadNextAudioFile(String file) throws IllegalArgumentException, SecurityException, IllegalStateException, IOException {
+        if (this.isStreaming(file)) {
+        	this.nextPlayer.setDataSource(file);
+        	this.nextPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        	this.nextPlayer.prepareAsync();
+        }
+        else {
+            if (file.startsWith("/android_asset/")) {
+                String f = file.substring(15);
+                android.content.res.AssetFileDescriptor fd = this.handler.cordova.getActivity().getAssets().openFd(f);
+                this.nextPlayer.setDataSource(fd.getFileDescriptor(), fd.getStartOffset(), fd.getLength());
+            }
+            else {
+                File fp = new File(file);
+                if (fp.exists()) {
+                    FileInputStream fileInputStream = new FileInputStream(file);
+                    this.nextPlayer.setDataSource(fileInputStream.getFD());
+                    fileInputStream.close();
+                }
+                else {
+                    this.nextPlayer.setDataSource(Environment.getExternalStorageDirectory().getPath() + "/" + file);
+                }
+            }
+            this.nextPlayer.prepare();
+       }
+    }
+
     private void sendErrorStatus(int errorCode) {
         sendStatusChange(MEDIA_ERROR, errorCode, null);
     }
@@ -586,4 +630,51 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
 
         this.handler.sendEventMessage("status", statusDetails);
     }
+    
+    private class CompatMediaPlayer extends MediaPlayer implements OnCompletionListener {
+
+	    private boolean mCompatMode = true;
+	    private MediaPlayer mNextPlayer;
+	    private OnCompletionListener mCompletion;
+	
+	    public CompatMediaPlayer() {
+	        try {
+	            MediaPlayer.class.getMethod("setNextMediaPlayer", MediaPlayer.class);
+	            mCompatMode = false;
+	        } catch (NoSuchMethodException e) {
+	            mCompatMode = true;
+	            super.setOnCompletionListener(this);
+	        }
+	    }
+	
+	    public void setNextMediaPlayer(MediaPlayer next) {
+	        if (mCompatMode) {
+	            mNextPlayer = next;
+	        } else {
+	            super.setNextMediaPlayer(next);
+	        }
+	    }
+	
+	    @Override
+	    public void setOnCompletionListener(OnCompletionListener listener) {
+	        if (mCompatMode) {
+	            mCompletion = listener;
+	        } else {
+	            super.setOnCompletionListener(listener);
+	        }
+	    }
+	
+	    @Override
+	    public void onCompletion(MediaPlayer mp) {
+	        if (mNextPlayer != null) {
+	            // as it turns out, starting a new MediaPlayer on the completion
+	            // of a previous player ends up slightly overlapping the two
+	            // playbacks, so slightly delaying the start of the next player
+	            // gives a better user experience
+	            SystemClock.sleep(50);
+	            mNextPlayer.start();
+	        }
+	        mCompletion.onCompletion(this);
+	    }
+	}
 }
