@@ -22,7 +22,8 @@
 [![Build Status](https://travis-ci.org/apache/cordova-plugin-media.svg)](https://travis-ci.org/apache/cordova-plugin-media)
 
 This plugin provides the ability to record and play back audio files on a device.
-This fork adds the possibility to loop music in Android.
+
+__This fork adds the possibility to loop music in Android.__
 
 __NOTE__: The current implementation does not adhere to a W3C
 specification for media capture, and is provided for convenience only.
