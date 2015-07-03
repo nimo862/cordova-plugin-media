@@ -22,6 +22,7 @@
 [![Build Status](https://travis-ci.org/apache/cordova-plugin-media.svg)](https://travis-ci.org/apache/cordova-plugin-media)
 
 This plugin provides the ability to record and play back audio files on a device.
+This fork adds the possibility to loop music in Android.
 
 __NOTE__: The current implementation does not adhere to a W3C
 specification for media capture, and is provided for convenience only.
@@ -259,6 +260,10 @@ Starts or resumes playing an audio file.
 
         var myMedia = new Media("audio/beer.mp3")
         myMedia.play()  // first looks for file in www/audio/beer.mp3 then in <application>/documents/tmp/audio/beer.mp3
+
+## media.playLoop (Android only)
+
+Starts or resumes playing an audio file continuously (loop) on Android. In order to have gapeless loops, the best results have been obtained with AAC files (MP3 introduces a little gap between loops).
 
 ## media.release
 
