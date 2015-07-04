@@ -499,6 +499,7 @@ public class AudioPlayer implements OnCompletionListener, OnPreparedListener, On
                         	this.player.setNextMediaPlayer(this.nextPlayer);
                         }
                     } catch (Exception e) {
+                    	Log.e(LOG_TAG, "Error in readyPlayer", e);
                         sendErrorStatus(MEDIA_ERR_ABORTED);
                     }
                     return false;
